@@ -1,0 +1,2 @@
+# pensynth
+Penalized Synthetic Control
