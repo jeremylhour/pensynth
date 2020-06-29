@@ -98,13 +98,13 @@ parfor t = 1:T
         while j <= length(Lambda)
             lambda = Lambda(j);
             W = zeros(n0,n1);
-            for i=1:n1
-                x = x1(:,i);
+            for z=1:n1
+                x = x1(:,z);
                 D = x0 - kron(ones(1,n0),x);
                 delta = diag(D'*D); 
                 f = lambda*delta-2*x0'*x;
                 w = quadprog(H,f,[],[],ones(1,n0),1,zeros(n0,1),ones(n0,1),[],options);
-                W(:,i) = w;
+                W(:,z) = w;
             end
             mse = (y1(:,ii)-W'*y0(:,ii))'*(y1(:,ii)-W'*y0(:,ii));
             if mse < minMSE
@@ -129,12 +129,12 @@ parfor t = 1:T
     
     % 2.1 Collects the indices of the m closet points in 'matches'
     matches = zeros(M,n1);
-    for i=1:n1
-         x = x1(:,i);
+    for z=1:n1
+         x = x1(:,z);
          D = x0 - kron(ones(1,n0),x);
          delta = diag(D'*D); 
          [sorted,I]=sort(delta);
-         matches(:,i) = I(1:M);
+         matches(:,z) = I(1:M);
     end
     
     % 2.2 Computes the corresponding MSE
@@ -166,12 +166,12 @@ parfor t = 1:T
 
     % 3. Non-Penalized Synthetic Control
     Wnp = zeros(n0,n1);
-    for i=1:n1
-        x = x1(:,i);
+    for z=1:n1
+        x = x1(:,z);
         D = x0 - kron(ones(1,n0),x);
         delta = diag(D'*D); 
         w = quadprog(H,-2*x0'*x,[],[],ones(1,n0),1,zeros(n0,1),ones(n0,1),[],options);
-        Wnp(:,i) = w;
+        Wnp(:,z) = w;
     end
     
     % 3-5. Count Outside Convex Hull (second method)
@@ -183,12 +183,12 @@ parfor t = 1:T
     %OutConvHull(t) = sum(isnan(tri));
 
     Wpure = zeros(n0,n1);
-    %for i = 1:n1
-    %    if(isnan(tri(i))==0)
-    %        idx = DT(tri(i),:);
-    %        Wpure(idx,i) = coordinates(i,:);
-    %    elseif(isnan(tri(i)))
-    %        Wpure(:,i) = Wnp(:,i);
+    %for z = 1:n1
+    %    if(isnan(tri(z))==0)
+    %        idx = DT(tri(z),:);
+    %        Wpure(idx,z) = coordinates(z,:);
+    %    elseif(isnan(tri(z)))
+    %        Wpure(:,z) = Wnp(:,z);
     %    end
     %end
     
