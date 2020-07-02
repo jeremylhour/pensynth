@@ -43,8 +43,8 @@ T = 500;
 n1 = 10; % treated
 n0 = 20; % control
 k = 4; % dimension of covariates
-a = 0.2; b = 0.8; h = 0.2; % support parameters
-rset = [1 1.2 1.4 1.8 2 2.2]; % curvature of regression function
+a = 0.1; b = 0.9; h = 0.1; % support parameters
+rset = [1 1.2 1.4 2]; % curvature of regression function
 nbr = size(rset,2);
 dthr = 0.001; % threshold for a null weight
 
@@ -103,9 +103,14 @@ parfor t = 1:T
     stream.Substream = t;
 
     % 0. Simulate Data
+    % Notice: x1 and x0 are simulated only once per loop
     x1 = a+(b-a)*rand(k,n1);
     x0 = (a-h)+(b-a+2*h)*rand(k,n0);
     x0 = sqrt(x0);
+    
+    H = 2*(x0'*x0);
+    f0 = [ones(1,n0); x0];
+    f1 = [ones(1,n1); x1];
     
     eps1 = randn(n1,1); eps0 = randn(n0,1);
     y1 = NaN(n1,nbr); y0 = NaN(n0,nbr); 
@@ -119,19 +124,17 @@ parfor t = 1:T
         y0(:,i) = sum(x0.^r,1)'/v+eps0;
     end
 
-    H = 2*(x0'*x0);
-    f0 = [ones(1,n0); x0];
-    f1 = [ones(1,n1); x1];
+
     
     
     % 1. Penalized Synthetic Control w/ optimized lambda
     % Here lambda is set to optimize the MSE and the BC MSE
     
-    % Initialize pSC
+    % Initialize penalized synthetic control
     Wp = NaN(n0,n1,nbr);
     optlambdacollect = [];
     
-    % Initialize pSC with BC
+    % Initialize penalized synthetic control with bias-correction
     Wpbc = NaN(n0,n1,nbr);
     optlambdacollectbc = [];
     
@@ -144,7 +147,7 @@ parfor t = 1:T
         minMSE = Inf;
         optlambda = 0;
         
-        % for the BC
+        % compute OLS estimator for the bias-correction
         mu0 = (f0*f0')\(f0*y0(:,ii));
         mu_hat0 = f0'*mu0;
         mu_hat1 = f1'*mu0;
@@ -209,7 +212,7 @@ parfor t = 1:T
     lambdavalues(t,:) = optlambdacollect;
     lambdavaluesbc(t,:) = optlambdacollectbc;
 
-    % 2. Matching
+    % 2. Nearest Neighbor Matching
     
     % 2.1 Collects the indices of the m closet points in 'matches'
     matches = zeros(M,n1);
@@ -222,7 +225,7 @@ parfor t = 1:T
     end
     
     % 2.2 Computes the corresponding MSE
-    % Here we compute the MSE and the BC MSE
+    % Here we compute the MSE and the bias-corrected MSE
     Wmopt = zeros(n0,n1,nbr);
     optmcollect = [];
     
@@ -281,8 +284,9 @@ parfor t = 1:T
     
     
     % NB: only step 1 and 2 depend on y (and r) 
+    % Non-penalized synthetic control, pure synthetic control and 1-NN-matching are computed without "y"
 
-    % 3. Non-Penalized Synthetic Control
+    % 3. Non-Penalized Synthetic Control (lambda=0)
     Wnp = zeros(n0,n1);
     for z=1:n1
         x = x1(:,z);
@@ -395,11 +399,7 @@ parfor t = 1:T
     maxminDensnp(t,:) = [min(sum(Wnp>dthr)) max(sum(Wnp>dthr))];
     maxminDenspure(t,:) = [min(sum(Wpure>dthr)) max(sum(Wpure>dthr))];
 
-    % 7. Bias correction (linear, quadratic commented)
-    % f0 = [ones(1,n0); x0; x0.^2];
-    % f1 = [ones(1,n1); x1; x1.^2];
-    f0 = [ones(1,n0); x0];
-    f1 = [ones(1,n1); x1];
+    % 7. Bias correction
     i = 0;
     
     Estp_Temp = []; Estnp_Temp = []; Estm_Temp = [];
@@ -415,7 +415,7 @@ parfor t = 1:T
         mu_hat0 = f0'*mu0;
         mu_hat1 = f1'*mu0;
     
-        % bc: Bias
+        % bias-correction: Bias
         Estp_Temp = [Estp_Temp;...
             mean(y1(:,i)-Wpbc(:,:,i)'*y0(:,i)...
             - (mu_hat1-Wpbc(:,:,i)'*mu_hat0))];
@@ -436,7 +436,7 @@ parfor t = 1:T
             mean(y1(:,i)-Wpure'*y0(:,i)...
             - (mu_hat1-Wpure'*mu_hat0))];
 
-        % bc: MSE
+        % bias correction: MSE
         MSEp_Temp = [MSEp_Temp;...
             (y1(:,i)-Wpbc(:,:,i)'*y0(:,i)...
             - (mu_hat1-Wpbc(:,:,i)'*mu_hat0))'*(y1(:,i)-Wpbc(:,:,i)'*y0(:,i)...
