@@ -26,7 +26,7 @@ pensynth_parallel <- function(X0,X1,Y0,Y1,V,lambda,tol=1e-6){
   
   # start parallel
   cores = detectCores()
-  cl = makeCluster(cores[1]/2)
+  cl = makeCluster(5)
   registerDoParallel(cl)
   t_start <- Sys.time()
   res <- foreach(k = 1:K,.export=func_list,.packages=c('LowRankQP'),.combine='rbind', .multicombine=TRUE, .errorhandling = 'remove') %dopar% {

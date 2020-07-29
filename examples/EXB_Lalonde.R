@@ -3,7 +3,7 @@
 #' @author Jeremy L'Hour
 
 # setwd("//ulysse/users/JL.HOUR/1A_These/A. Research/RegSynthProject/regsynth")
-# setwd("/Users/jeremylhour/Documents/R/pensynth")
+# setwd("/Users/jeremylhour/Documents/code/pensynth")
 rm(list=ls())
 
 ### Load packages
@@ -82,7 +82,11 @@ X = data.frame(lalonde.psid[,c("age","education","married","black","hispanic","r
 )
 
 X_unscaled = X
-X[,c("age","education","re74","re75")] = mMscale(X[,c("age","education","re74","re75")])
+#X[,c("age","education","re74","re75")] = mMscale(X[,c("age","education","re74","re75")])
+#X[,c("age","education","re74","re75")] = mapply(function(x) X[,x]/sd(X[,x]), c("age","education","re74","re75")) 
+
+X = mapply(function(x) X[,x]/sd(X[d==1,x]), 1:ncol(X))
+
 X = as.matrix(X)
 
 X0 = t(X[d==0,]); X1 = t(X[d==1,])
