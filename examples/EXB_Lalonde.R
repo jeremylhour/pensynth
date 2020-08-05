@@ -164,9 +164,9 @@ ggplot(df, aes(x=weight)) + geom_histogram(color="black", fill="lightblue") +
 ### Optimize lambda
 
 
-W_matching = matchest(X0,X1,m=4)$Wsol
+W_matching = matchest(X0_unique,X1,m=4)$Wsol
 X0_matched = which(apply(W_matching>0,2,sum)>0)
-length(X0_matched) # This gives exactly 189 control units
+length(X0_matched) # This gives exactly 170 control units
 
 # Setting up the procedure
 lambda = c(0,.00001,.01,.1,.15,seq(.25,5,.1)) # set of lambda to be considered for optim
@@ -176,10 +176,10 @@ set.seed(12071990)
 keep_tau = matrix(nrow=length(lambda), ncol=length(X0_matched))
 for(k in 1:length(X0_matched)){
   print(paste("Creating penalized synth for control unit",k,"of", length(X0_matched)))
-  X1k = as.matrix(X0[,X0_matched[k]])
-  X0k = as.matrix(X0[,-X0_matched[k]])
-  Y1k = Y0[X0_matched[k]]
-  Y0k = Y0[-X0_matched[k]]
+  X1k = as.matrix(X0_unique[,X0_matched[k]])
+  X0k = as.matrix(X0_unique[,-X0_matched[k]])
+  Y1k = Y0_average[X0_matched[k]]
+  Y0k = Y0_average[-X0_matched[k]]
   solpath = pensynth_parallel(X0k,X1k,Y0k,Y1k,lambda=lambda)
   keep_tau[,k] = solpath$CATT
 }
@@ -188,7 +188,7 @@ for(k in 1:length(X0_matched)){
 curve_RMSE = sqrt(apply(keep_tau^2,1,mean))
 lambda_opt_RMSE = min(lambda[which(curve_RMSE==min(curve_RMSE))])
 print(paste("RMSE optimal lambda:",lambda_opt_RMSE))
-sol_RMSE = regsynth(X0,X1,Y0,Y1,V,pen=lambda_opt_RMSE,parallel=TRUE)
+sol_RMSE = regsynth(X0_unique,X1,Y0_average,Y1,V,pen=lambda_opt_RMSE,parallel=TRUE)
 Wsol_opt_RMSE = sol_RMSE$Wsol
 
 # Statistics on RMSE-opt lambda
