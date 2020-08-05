@@ -128,9 +128,14 @@ print(Sys.time()-t_start)
 
 ### A MODIFIER ENSUITE POUR AVOIR LES BONNES STATS
 
+X0_unscaled = X_unscaled[d==0,]
+X0_unscaled_unique = as.data.table(cbind(Y0,X0_unscaled))
+X0_unscaled_unique = X0_unscaled_unique[,list(Y0_average = mean(Y0)), keys]
+X0_unscaled_unique = t(as.matrix(X0_unscaled_unique[,..keys]))
+
 # Statistics on fixed lambda
 Table[4,"lambda"] = .1
-Table[4,names(X_unscaled)] = round(apply(t(X_unscaled[d==0,])%*%t(sol$Wsol),1,mean),digits=2) # A MODIFIER
+Table[4,names(X_unscaled)] = round(apply(X0_unscaled_unique%*%t(sol$Wsol),1,mean), digits=2)
 Table[4,"Treatment_effect"] = sol$ATT
 
 sparsity_index = apply(sol$Wsol>0,1,sum)
@@ -188,7 +193,7 @@ Wsol_opt_RMSE = sol_RMSE$Wsol
 
 # Statistics on RMSE-opt lambda
 Table[5,"lambda"] = lambda_opt_RMSE
-Table[5,names(X_unscaled)] = round(apply(t(X_unscaled[d==0,])%*%t(sol_RMSE$Wsol),1,mean),digits=2)
+Table[5,names(X_unscaled)] = round(apply(X0_unscaled_unique%*%t(sol_RMSE$Wsol),1,mean), digits=2)
 Table[5,"Treatment_effect"] = sol_RMSE$ATT
 
 sparsity_index = apply(sol_RMSE$Wsol>0,1,sum)
@@ -214,7 +219,7 @@ if(lambda_opt_bias != lambda_opt_RMSE){
 
 # Statistics on bias-opt lambda
 Table[6,"lambda"] = lambda_opt_bias
-Table[6,names(X_unscaled)] = round(apply(t(X_unscaled[d==0,])%*%t(sol_bias$Wsol),1,mean),digits=2)
+Table[6,names(X_unscaled)] = round(apply(X0_unscaled_unique%*%t(sol_bias$Wsol),1,mean), digits=2)
 Table[6,"Treatment_effect"] = sol_bias$ATT
 
 sparsity_index = apply(sol_bias$Wsol>0,1,sum)
@@ -294,6 +299,8 @@ Table[8,"Sample_size"] = sum(activ_index>0)
 rownames(Table) = c("Treated", "Experimental", "PSID",
                     "PenSynth fixed lambda", "PenSynth MSE opt lambda","PenSynth bias opt lambda",
                     "Matching 1NN", "Matching opt NN")
+
+print(t(Table))
 
 ###########################################
 ###########################################
