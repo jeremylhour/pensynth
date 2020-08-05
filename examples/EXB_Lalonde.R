@@ -14,6 +14,7 @@ library("grid")
 library("reshape2")
 library("LowRankQP")
 library("doParallel")
+library("data.table")
 
 ### Load user functions
 source("functions/wsoll1.R")
@@ -81,11 +82,18 @@ X = data.frame(lalonde.psid[,c("age","education","married","black","hispanic","r
                "NoIncome75"=as.numeric(lalonde.psid[,"re75"]==0)
 )
 
-X_unscaled = X
-#X[,c("age","education","re74","re75")] = mMscale(X[,c("age","education","re74","re75")])
-#X[,c("age","education","re74","re75")] = mapply(function(x) X[,x]/sd(X[,x]), c("age","education","re74","re75")) 
+X_unscaled = X # Save unscaled data to compute statistics
 
-X = mapply(function(x) X[,x]/sd(X[d==1,x]), 1:ncol(X))
+# Rescale by dividing by standard error
+X[,c("age","education","married","black","hispanic","nodegree","NoIncome74","NoIncome75")] = mapply(function(x) X[,x]/sd(X[d==1,x]), c("age","education","married","black","hispanic","nodegree","NoIncome74","NoIncome75"))
+
+# Rescale income by standard error cutting outliers (above quantile 90% for the treated)
+Q90 = mapply(function(x) quantile(X[d==1,x], p=.9), c("re74","re75"))
+re74_trunc_std = sd(X[(d==1 & X[,"re74"] < Q90[1]),"re74"])
+re75_trunc_std = sd(X[(d==1 & X[,"re75"] < Q90[2]),"re75"])
+
+X[,"re74"] = X[,"re74"]/re74_trunc_std 
+X[,"re75"] = X[,"re75"]/re75_trunc_std 
 
 X = as.matrix(X)
 
@@ -103,16 +111,26 @@ Table[3,"Sample_size"] = sum(1-d)
 ##########################################
 ##########################################
 
+
+# For synthetic control: eliminate untreated rows with similar value of X (just keep one) 
+# and assign average value of the outcome
+
+keys = c('age', 'education',  'married', 'black', 'hispanic', 're74', 're75', 'nodegree', 'NoIncome74', 'NoIncome75')
+X0_unique = as.data.table(cbind(Y0,t(X0)))
+X0_unique = X0_unique[,list(Y0_average = mean(Y0)), keys]
+Y0_average = as.vector(X0_unique[,Y0_average])
+X0_unique = t(as.matrix(X0_unique[,..keys]))
+
 # lambda = .1
 t_start <- Sys.time()
-sol = regsynth(X0,X1,Y0,Y1,V,pen=.1,parallel=TRUE)
+sol = regsynth(X0_unique,X1,Y0_average,Y1,V,pen=.1,parallel=TRUE)
 print(Sys.time()-t_start)
 
-Collect_Stats = get_stats(sol,X0_unscaled = t(X_unscaled[d==0,]),X1_unscaled = t(X_unscaled[d==1,]))
+### A MODIFIER ENSUITE POUR AVOIR LES BONNES STATS
 
 # Statistics on fixed lambda
 Table[4,"lambda"] = .1
-Table[4,names(X_unscaled)] = round(apply(t(X_unscaled[d==0,])%*%t(sol$Wsol),1,mean),digits=2)
+Table[4,names(X_unscaled)] = round(apply(t(X_unscaled[d==0,])%*%t(sol$Wsol),1,mean),digits=2) # A MODIFIER
 Table[4,"Treatment_effect"] = sol$ATT
 
 sparsity_index = apply(sol$Wsol>0,1,sum)
@@ -168,8 +186,6 @@ print(paste("RMSE optimal lambda:",lambda_opt_RMSE))
 sol_RMSE = regsynth(X0,X1,Y0,Y1,V,pen=lambda_opt_RMSE,parallel=TRUE)
 Wsol_opt_RMSE = sol_RMSE$Wsol
 
-Collect_Stats = cbind(Collect_Stats,get_stats(sol_RMSE,X0_unscaled = t(X_unscaled[d==0,]),X1_unscaled = t(X_unscaled[d==1,])))
-
 # Statistics on RMSE-opt lambda
 Table[5,"lambda"] = lambda_opt_RMSE
 Table[5,names(X_unscaled)] = round(apply(t(X_unscaled[d==0,])%*%t(sol_RMSE$Wsol),1,mean),digits=2)
@@ -191,7 +207,6 @@ print(paste("bias optimal lambda:",lambda_opt_bias))
 if(lambda_opt_bias != lambda_opt_RMSE){
   sol_bias = regsynth(X0,X1,Y0,Y1,V,pen=lambda_opt_bias,parallel=TRUE)
   Wsol_opt_bias = sol_bias$Wsol
-  Collect_Stats = cbind(Collect_Stats,get_stats(sol_bias,X0_unscaled = t(X_unscaled[d==0,]),X1_unscaled = t(X_unscaled[d==1,])))
 } else {
   sol_bias = sol_RMSE
   Wsol_opt_bias = Wsol_opt_RMSE
@@ -218,8 +233,6 @@ Table[6,"Sample_size"] = sum(activ_index>0)
 ########################
 
 sol_1NN = matchest(X0,X1,Y0,Y1,m=1)
-
-Collect_Stats = cbind(Collect_Stats,get_stats(sol_1NN,X0_unscaled = t(X_unscaled[d==0,]),X1_unscaled = t(X_unscaled[d==1,])))
 
 # Statistics on 1-NN
 Table[7,names(X_unscaled)] = round(apply(t(X_unscaled[d==0,])%*%t(sol_1NN$Wsol),1,mean),digits=2)
@@ -263,9 +276,6 @@ M_opt_RMSE_NN = min(M[which(curve_RMSE_NN==min(curve_RMSE_NN))])
 print(paste("RMSE optimal m:",M_opt_RMSE_NN))
 sol_RMSE_NN = matchest(X0,X1,Y0,Y1,m=M_opt_RMSE_NN)
 
-Collect_Stats = cbind(Collect_Stats,get_stats(sol_RMSE_NN,X0_unscaled = t(X_unscaled[d==0,]),X1_unscaled = t(X_unscaled[d==1,])))
-
-print(Collect_Stats)
 
 # Statistics on RMSE-opt NN
 Table[8,names(X_unscaled)] = round(apply(t(X_unscaled[d==0,])%*%t(sol_RMSE_NN$Wsol),1,mean),digits=2)
@@ -278,6 +288,12 @@ Table[8,"Max_density"] = max(sparsity_index)
 
 activ_index = apply(sol_RMSE_NN$Wsol>0,2,sum)
 Table[8,"Sample_size"] = sum(activ_index>0)
+
+
+### Adding labels
+rownames(Table) = c("Treated", "Experimental", "PSID",
+                    "PenSynth fixed lambda", "PenSynth MSE opt lambda","PenSynth bias opt lambda",
+                    "Matching 1NN", "Matching opt NN")
 
 ###########################################
 ###########################################
