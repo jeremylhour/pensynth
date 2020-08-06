@@ -321,8 +321,14 @@ for(b in 1:B){
   X0_tilde = t(X[d_tilde==0,]); X1_tilde = t(X[d_tilde==1,])
   Y0_tilde = y[d_tilde==0]; Y1_tilde = y[d_tilde==1]
   
+  # Consolidate similar observations
+  X0_unique = as.data.table(cbind(Y0_tilde,t(X0_tilde)))
+  X0_unique = X0_unique[,list(Y0_average = mean(Y0_tilde)), keys]
+  Y0_average_tilde = as.vector(X0_unique[,Y0_average])
+  X0_unique_tilde = t(as.matrix(X0_unique[,..keys]))
+  
   # Compute synthetic control solution
-  sol_tilde = regsynth(X0_tilde,X1_tilde,Y0_tilde,Y1_tilde,V,pen=.1,parallel=TRUE)
+  sol_tilde = regsynth(X0_unique_tilde,X1_tilde,Y0_average_tilde,Y1_tilde,V,pen=.1,parallel=TRUE)
   indiv_TE[b,] = sol_tilde$CATT
 }
 
