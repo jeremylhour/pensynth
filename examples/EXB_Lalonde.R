@@ -210,7 +210,7 @@ lambda_opt_bias = min(lambda[which(curve_bias==min(curve_bias))])
 print(paste("bias optimal lambda:",lambda_opt_bias))
 
 if(lambda_opt_bias != lambda_opt_RMSE){
-  sol_bias = regsynth(X0,X1,Y0,Y1,V,pen=lambda_opt_bias,parallel=TRUE)
+  sol_bias = regsynth(X0_unique,X1,Y0_average,Y1,V,pen=lambda_opt_bias,parallel=TRUE)
   Wsol_opt_bias = sol_bias$Wsol
 } else {
   sol_bias = sol_RMSE
