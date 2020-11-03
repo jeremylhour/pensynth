@@ -65,10 +65,10 @@ for index in range(X1_full.shape[0]):
         in_hull_flag = in_hull(x, X0)
         if in_hull_flag:
             X0_tilde, antiranks = incremental_pure_synth(X1_full[index],X0)
-            w = pensynth_weights(np.transpose(X0_tilde),X1_full[index])
+            w = pensynth_weights(np.transpose(X0_tilde),X1_full[index], pen=0)
             all_w[index,antiranks] = np.transpose(w)
         else:
-            w = pensynth_weights(np.transpose(X0),X1_full[index])
+            w = pensynth_weights(np.transpose(X0),X1_full[index], pen=0)
             all_w[index,] = np.transpose(w)
 
 print(f"Temps d'exécution total : {(time.time() - start_time):.2f} secondes ---")
