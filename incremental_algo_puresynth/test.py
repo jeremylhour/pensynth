@@ -23,11 +23,14 @@ from functions import *
 
 
 # Simulate data
-n = 101
-p = 5
+n = 1001
+p = 10
 
 X = np.random.normal(0, 1, size=(n, p))
 X1 = X[0]; X0 = np.delete(X, (0), axis=0)
+
+in_hull_flag = in_hull(X1, X0)
+print('Is inside the convex hull?: {}'.format(in_hull_flag))
 
 
 # Method 1: Compute Delaunay Triangulation of X0

@@ -48,7 +48,7 @@ Y0 = df_consolidated['outcome'].to_numpy()
 
 ########## APPLYING THE IN-HOUSE ALGORITHM ##########
 p = X1_full.shape[1]
-all_w = np.zeros((X1_full.shape[0],X0_consolidated.shape[0]))
+all_w = np.zeros((X1_full.shape[0],X0.shape[0]))
 
 start_time = time.time()
 
@@ -74,7 +74,8 @@ for index in range(X1_full.shape[0]):
 
 print(f"Temps d'exécution total : {(time.time() - start_time):.2f} secondes ---")
 
-### Save weights
+
+########## Save weights ##########
 np.savetxt('/Users/jeremylhour/Documents/code/puresynth_solution.csv', all_w, delimiter=',')
 
 
@@ -95,4 +96,7 @@ print('Max sparsity: {:.0f}'.format(sparsity_index.max()))
 activ_index = (all_w > 0).sum(axis=0)>0
 print('Active untreated units: {:.0f}'.format(activ_index.sum()))
 
+########## Unit with sparsity > p+1? ##########
+high_sparsity = np.where(sparsity_index>11)[0][0]
+w_s = all_w[high_sparsity,]
 
