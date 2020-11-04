@@ -184,4 +184,16 @@ def pensynth_weights(X0, X1, pen=0, **kwargs):
     # SOLUTION
     solvers.options['show_progress'] = False
     sol = solvers.qp(P,q,G,h,A,b)
-    return np.array(sol['x'])
+    return Tzero(np.array(sol['x']))
+
+def Tzero(w,tol=1e-5):
+    """
+    Tzero: set values under threshold to zero
+    
+    :param w: numpy array of dimension 1.
+    """
+    w[w<tol] = 0
+    w = w/w.sum()
+    return w
+    
+    
