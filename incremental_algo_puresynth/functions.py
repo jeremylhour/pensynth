@@ -11,6 +11,7 @@ incrementally compute the Delaunay triangulation
 
 import sys
 import numpy as np
+import math
 import itertools
 from scipy.spatial.distance import cdist
 from scipy.optimize import linprog
@@ -56,7 +57,9 @@ def in_hull(x, points):
     c = np.zeros(n_points)
     A = np.r_[points.T,np.ones((1,n_points))]
     b = np.r_[x, np.ones(1)]
-    lp = linprog(c, A_eq=A, b_eq=b)
+    with warnings.catch_warnings(): # to ignore warning when degenerate cases
+        warnings.simplefilter("ignore")
+        lp = linprog(c, A_eq=A, b_eq=b)
     return lp.success
 
 
@@ -121,36 +124,33 @@ def incremental_pure_synth(X1,X0):
         # 1. Set of 'k' nearest neighbors
         X_NN = X0[anti_ranks[:k],]
         
+        # 2. Check if X1 belongs to that convex hull
         if not in_hull_flag:
-            with warnings.catch_warnings():
-                warnings.simplefilter("ignore")
-                in_hull_flag = in_hull(X1, X_NN)
+            in_hull_flag = in_hull(X1, X_NN)
         
         if not in_hull_flag:
             continue # skip to next iteration if X1 not in convex hull of nearest neighbors
         
-        # 2. Select all the subsets of cardinality p+1 that have x in their convex hull
-        # Since previous simplices did not contain X1,
-        # we need only to consider the simplices that have the new nearest neighbors as a vertex
-        candidates = []
+        # 3. For all the subsets of cardinality p+1 that have x in their convex hull...
+        #  (since previous simplices did not contain X1,
+        #   we need only to consider the simplices that have the new nearest neighbors as a vertex)
+        # ...check if a point in X0 is contained in the circumscribing hypersphere of any of these simplices
                 
         for i in itertools.combinations(range(k-1),p):
-            new_tuple = i + (k-1,)
-            with warnings.catch_warnings():
-                warnings.simplefilter("ignore")
-                if in_hull(X1, X_NN[new_tuple,]):
-                    candidates.append(new_tuple)
+            candidate = i + (k-1,)
+            if in_hull(X1, X_NN[candidate,]):
+                r, c = compute_radius_and_barycenter(X_NN[candidate,]) # sometimes gives an error if points have the same values for a particular XÒ
                 
-        # 3. Check if a point in X0 is contained in the circumscribing hypersphere of any of these simplices
-        for simplex in candidates:
-            #r, c = compute_radius_and_barycenter(X_NN[simplex,]) # sometimes gives an error if points have the same values for a particular X
-            r, c = compute_radius_and_barycenter(X_NN[simplex,]+np.random.normal(0, .0000000001, size=(p+1, p)))
-            np.random.normal(0, 0.0000001, size=(3, 2))
-            if not inside_sphere(np.delete(X0,anti_ranks[simplex,],0), c, r):
-                #print(simplex)
-                the_simplex = simplex
-                found_it = True
-                break
+                if math.isnan(r): # if there is a degenerate case, we stop
+                    #the_simplex = tuple([i for i in range(k)]) # if there is a degenerate case, we stop
+                    the_simplex = candidate #no? that will pre-select points...
+                    found_it = True
+                    break
+            
+                if not inside_sphere(np.delete(X0,anti_ranks[candidate,],0), c, r):
+                    the_simplex = candidate
+                    found_it = True
+                    break
             
         if found_it:
             break

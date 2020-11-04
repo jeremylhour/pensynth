@@ -72,3 +72,6 @@ for index in range(X1_full.shape[0]):
             all_w[index,] = np.transpose(w)
 
 print(f"Temps d'exécution total : {(time.time() - start_time):.2f} secondes ---")
+
+### Compute the necessary statistics
+all_w.to_csv('/Users/jeremylhour/Documents/code/puresynth_solution.csv', encoding='utf8')
