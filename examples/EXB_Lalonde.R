@@ -2,7 +2,6 @@
 #' 02/04/2020
 #' @author Jeremy L'Hour
 
-# setwd("//ulysse/users/JL.HOUR/1A_These/A. Research/RegSynthProject/regsynth")
 # setwd("/Users/jeremylhour/Documents/code/pensynth")
 rm(list=ls())
 
@@ -368,3 +367,24 @@ grid.arrange(plot1, plot2, ncol=2)
 dev.off()
 
 save.image(file = 'rsessions/Lalonde_Example.RData')
+
+############################################################
+############################################################
+### 7. Pure Synthetic Control -- from python computation ###
+############################################################
+############################################################
+w_pure = read.csv(file='/Users/jeremylhour/Documents/code/puresynth_solution.csv',header=F)
+w_pure = as.matrix(w_pure)
+
+# Statistics on fixed lambda
+Table[9,"lambda"] = NA
+Table[9,names(X_unscaled)] = round(apply(X0_unscaled_unique%*%t(w_pure),1,mean), digits=2)
+Table[9,"Treatment_effect"] = mean(Y1 - w_pure%*%Y0_average)
+
+sparsity_index = apply(w_pure>0,1,sum)
+Table[9,"Min_density"] = min(sparsity_index)
+Table[9,"Median_density"] = median(sparsity_index)
+Table[9,"Max_density"] = max(sparsity_index)
+
+activ_index = apply(w_pure>0,2,sum)
+Table[9,"Sample_size"] = sum(activ_index>0)

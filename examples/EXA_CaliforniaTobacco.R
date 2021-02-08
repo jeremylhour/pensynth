@@ -2,11 +2,11 @@
 ### Jeremy L Hour
 ### 11 Juillet 2016
 
-setwd("//ulysse/users/JL.HOUR/1A_These/A. Research/RegSynthProject/regsynth")
+setwd("/Users/jeremylhour/Documents/code/pensynth")
 
 
 rm(list=ls())
-set.seed(3101990)
+set.seed(12071990)
 
 ### Load packages
 library("MASS")
@@ -19,13 +19,11 @@ library("LowRankQP")
 ### Load user functions
 source("functions/wsol.R")
 source("functions/wsoll1.R")
-source("functions/matchDGP.R")
-source("functions/wATT.R")
 source("functions/TZero.R")
 source("functions/synthObj.R")
 
 ### 0. Loading data
-data = data.frame(t(read.table("//ulysse/users/JL.HOUR/1A_These/A. Research/RegSynthProject/regsynth/data/MLAB_data.txt")))
+data = data.frame(t(read.table("/Users/jeremylhour/Documents/data/MLAB_data.txt")))
 
 Names = c("State_ID","Income","RetailPrice", "Young", "BeerCons","Smoking1988", "Smoking1980","Smoking1975",
            mapply(function(x) paste("SmokingCons",x,sep=""),1970:2000))
@@ -185,6 +183,11 @@ matplot(lambda,MSPETot, type="o", pch=20,
 
 
 ### Computing with all lambda's on training sample
+varname = mapply(function(x) paste("SmokingCons",x,sep=""),1970:1980)
+Xtrain = cbind(data[,c("Income","RetailPrice", "Young", "BeerCons", varname)])
+X0 = t(Xtrain[d==0,])
+X1 = t(Xtrain[d==1,])
+
 lambda = seq(0,3.5,.001)
 Wsol = matrix(nrow=length(lambda), ncol=sum(1-d))
 
