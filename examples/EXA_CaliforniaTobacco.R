@@ -2,8 +2,10 @@
 ### Jeremy L Hour
 ### 11 Juillet 2016
 
-setwd("/Users/jeremylhour/Documents/code/pensynth")
-
+########## WARNING ##########
+# This code has been used for development of the main functions,
+# and may not work. Results have not been checked carefully. 
+# Mistakes might remain.
 
 rm(list=ls())
 set.seed(12071990)
@@ -17,7 +19,6 @@ library("reshape2")
 library("LowRankQP")
 
 ### Load user functions
-source("functions/wsol.R")
 source("functions/wsoll1.R")
 source("functions/TZero.R")
 source("functions/synthObj.R")

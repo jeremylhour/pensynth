@@ -4,7 +4,10 @@
 ### EDITED: 10/8/2018
 ### PARALLELIZED VERSION
 
-setwd("//ulysse/users/JL.HOUR/1A_These/A. Research/RegSynthProject/regsynth")
+########## WARNING ##########
+# This code has been used for development of the main functions,
+# and may not work. Results have not been checked carefully. 
+# Mistakes might remain.
 
 rm(list=ls())
 

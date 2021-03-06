@@ -7,7 +7,7 @@
 #' @param V is a p x p matrix of weights
 #' @param pen L1 penalty level (lambda)
 #' 
-#' @author Jérémy L'Hour
+#' @author Jeremy L'Hour
 
 wsoll1 <- function(X0,X1,V,pen=0.0){
   n = ncol(X0)

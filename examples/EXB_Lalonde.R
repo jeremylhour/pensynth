@@ -2,7 +2,6 @@
 #' 02/04/2020
 #' @author Jeremy L'Hour
 
-# setwd("/Users/jeremylhour/Documents/code/pensynth")
 rm(list=ls())
 
 ### Load packages

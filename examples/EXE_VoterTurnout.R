@@ -3,6 +3,10 @@
 ### 10/07/2019
 ### Jeremy L'Hour
 
+########## WARNING ##########
+# This code has been used for development of the main functions,
+# and may not work. Results have not been checked carefully. 
+# Mistakes might remain.
 
 setwd("//ulysse/users/JL.HOUR/1A_These/A. Research/RegSynthProject/regsynth")
 
@@ -21,12 +25,7 @@ library("doParallel")
 library("geometry")
 
 ### Load user functions
-source("functions/wsol.R")
 source("functions/wsoll1.R")
-source("functions/matchDGP.R")
-source("functions/wATT.R")
-source("functions/matching.R")
-source("functions/matchest.R")
 source("functions/regsynth.R")
 source("functions/regsynthpath.R")
 source("functions/TZero.R")
@@ -34,7 +33,6 @@ source("functions/synthObj.R")
 source("functions/perm.test.R")
 source("functions/conf.interval.R")
 source("functions/bias.R")
-source("functions/UtilitaryFunc.R")
 
 ### 0. Load Data
 data("gsynth")
