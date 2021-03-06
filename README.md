@@ -8,4 +8,4 @@ Synthetic control methods are commonly applied in empirical research to estimate
 
 Available at: https://sites.google.com/site/jeremylhour/research
 
-WARNING : regarding the files contained in the [examples](examples/), except for [DelaunayExampleforPaper.R](DelaunayExampleforPaper.R) and [EXB_Lalonde.R](EXB_Lalonde.R) that are used in the paper, there are no guarantee and there might remain bugs, coding mistakes, etc. Please check it carefully before applyting.
+WARNING : regarding the files contained in the [examples](examples/) folder, except for [DelaunayExampleforPaper.R](DelaunayExampleforPaper.R) and [EXB_Lalonde.R](EXB_Lalonde.R) that are used in the paper, there are no guarantee and there might remain bugs, coding mistakes, etc. Please check it carefully before applyting.
