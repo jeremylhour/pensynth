@@ -1,18 +1,13 @@
-#' Penalized Synthetic Control -- Empirical Applciation: Lalonde Data
+#' Empirical Application : Lalonde Data
+#' A Penalized Synthetic Control for Disaggregated Data
 #' 02/04/2020
-#' @author Jeremy L'Hour
+#' @author jeremylhour
 
 rm(list=ls())
 
 ### Load packages
-library("MASS")
-library("ggplot2")
-library("gtable")
-library("grid")
-library("reshape2")
-library("LowRankQP")
-library("doParallel")
-library("data.table")
+package_list = c("MASS", "ggplot2", "gtable", "grid", "reshape2", "LowRankQP", "doParallel", "data.table")
+lapply(package_list, require, character.only = TRUE)
 
 ### Load user functions
 source("functions/wsoll1.R")
@@ -30,7 +25,7 @@ mMscale <- function(X){
   return(scale(X, center=mins, scale=maxs-mins))
 }
 
-Table = data.frame()
+Table = data.frame() # to collect the results
 
 ############################
 ############################
@@ -43,7 +38,6 @@ data(lalonde.exp)
 
 d = lalonde.exp[,"treat"]
 y = lalonde.exp[,"re78"]
-
 X = data.frame(lalonde.exp[,c("age","education","married","black","hispanic","re74","re75","nodegree")],
                "NoIncome74"=as.numeric(lalonde.exp[,"re74"]==0),
                "NoIncome75"=as.numeric(lalonde.exp[,"re75"]==0)
@@ -69,12 +63,10 @@ remove(lalonde.exp,y,d,X)
 ############################
 ############################
 
-
 data(lalonde.psid)
 
 d = lalonde.psid[,"treat"]
 y = lalonde.psid[,"re78"]
-
 X = data.frame(lalonde.psid[,c("age","education","married","black","hispanic","re74","re75","nodegree")],
                "NoIncome74"=as.numeric(lalonde.psid[,"re74"]==0),
                "NoIncome75"=as.numeric(lalonde.psid[,"re75"]==0)
@@ -108,7 +100,6 @@ Table[3,"Sample_size"] = sum(1-d)
 ### 3. Synthetic control, fixed lambda ###
 ##########################################
 ##########################################
-
 
 # For synthetic control: eliminate untreated rows with similar value of X (just keep one) 
 # and assign average value of the outcome
@@ -372,7 +363,7 @@ save.image(file = 'rsessions/Lalonde_Example.RData')
 ### 7. Pure Synthetic Control -- from python computation ###
 ############################################################
 ############################################################
-w_pure = read.csv(file='/Users/jeremylhour/Documents/code/puresynth_solution.csv',header=F)
+w_pure = read.csv(file='puresynth_solution.csv',header=F)
 w_pure = as.matrix(w_pure)
 
 # Statistics on fixed lambda

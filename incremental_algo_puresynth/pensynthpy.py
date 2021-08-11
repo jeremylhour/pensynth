@@ -83,9 +83,8 @@ def compute_radius_and_barycenter(nodes):
     p = nodes.shape[1]
     theta = np.ones(p+1)
     Lambda = cdist(nodes, nodes)**2
-    b = np.concatenate(([1], np.zeros(p+1)))
     
-    Delta = np.zeros((p+2,p+2))
+    Delta = np.zeros((p+2, p+2))
     Delta[0,] = np.concatenate(([0], theta), axis=0)
     Delta[:,0] = np.concatenate(([0], theta), axis=0)
     Delta[1:,1:] = Lambda
@@ -120,7 +119,7 @@ def Tzero(w, tol=1e-5):
 # ------------------------------------------------------------------------------
 # MAIN FUNCTIONS
 # ------------------------------------------------------------------------------
-def incremental_pure_synth(X1,X0):
+def incremental_pure_synth(X1, X0):
     """
     incremental_pure_synth: 
         main algorithm, find the vertices of the simplex that X1 falls into
@@ -190,7 +189,7 @@ def pensynth_weights(X0, X1, pen=0, **kwargs):
     
     @param X0 (np.array): p x n matrix of untreated units
     @param X1 (np.array): p x 1 matrix of the treated unit
-    @param pen (float): lambda, positive parameter
+    @param pen (float): lambda, positive tuning parameter
     """
     V = kwargs.get('V', np.identity(len(X0)))
     # OBJECTIVE
@@ -213,7 +212,7 @@ def pensynth_weights(X0, X1, pen=0, **kwargs):
 
 
 if __name__=='__main__':
-    # Simulate data
+    # Test with simulated data
     n = 21
     p = 5
 
@@ -228,7 +227,7 @@ if __name__=='__main__':
         print("Treated not in convex hull.")
     
     print("="*80)
-    print("Method 1: Compute Delaunay Triangulation of X0")
+    print("Method 1 : Compute Delaunay Triangulation of X0")
     print("="*80)
     
     start_time = time.time()
@@ -240,10 +239,10 @@ if __name__=='__main__':
     print(f"Temps d'exécution total : {(time.time() - start_time):.7f} secondes ---")
 
     print("="*80)
-    print("Method 2: in-house algorithm")
+    print("Method 2 : in-house algorithm")
     print("="*80)
     
     start_time = time.time()
-    simplex = incremental_pure_synth(X1,X0)
+    simplex = incremental_pure_synth(X1=X1, X0=X0)
     print(simplex)
     print(f"Temps d'exécution total : {(time.time() - start_time):.7f} secondes ---")

@@ -1,6 +1,7 @@
-### EXAMPLE 1: California Tobacco Consumption
-### Jeremy L Hour
-### 11 Juillet 2016
+#' EXAMPLE 1: California Tobacco Consumption
+#' NOT IN THE PAPER
+#' 11 Juillet 2016
+#' @author jeremylhour
 
 ########## WARNING ##########
 # This code has been used for development of the main functions,
