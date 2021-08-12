@@ -94,7 +94,8 @@ def compute_radius_and_barycenter(nodes):
       
 def inside_sphere(nodes, barycenter, radius):
     """
-    inside_ball: find if any of the nodes is inside the given ball
+    inside_ball: 
+        find if any of the nodes is inside the given sphere
         
     @param nodes (np.array): points to check if inside
     @param barycenter: coordinates of the barycenter
@@ -107,9 +108,9 @@ def inside_sphere(nodes, barycenter, radius):
 def Tzero(w, tol=1e-5):
     """
     Tzero:
-    set values under threshold to zero
+        set values under threshold to zero.
     
-    @param w (np.array): numpy array of dimension 1.
+    @param w (np.array): numpy array of dimension 1, such that sum(w) = 1.
     @param tol (float): tolerance
     """
     w[w<tol] = 0
@@ -138,10 +139,7 @@ def incremental_pure_synth(X1, X0):
     
     ### BIG LOOP ###
     # We loop over number of possible points, starting from p+1
-    for k in range(p+1, N0+1):
-        sys.stdout.write("\r{0}".format(k))
-        sys.stdout.flush()
-        
+    for k in range(p+1, N0+1):        
         # init the_simplex variable if there is a problem
         # when points is not inside convex hull, returns all the points
         the_simplex =  tuple(range(k)) # init if there is a problem
@@ -163,11 +161,13 @@ def incremental_pure_synth(X1, X0):
         for i in itertools.combinations(range(k-1),p):
             candidate = i + (k-1,)
             if in_hull(X1, X_NN[candidate,]):
-                r, c = compute_radius_and_barycenter(X_NN[candidate,]) # sometimes gives an error if points have the same values for a particular XÒ
+                try:
+                    r, c = compute_radius_and_barycenter(X_NN[candidate,]) # sometimes gives an error if points have the same values for a particular X0
+                except:
+                    r = np.nan
                 
                 if math.isnan(r): # if there is a degenerate case, we stop
-                    #the_simplex = tuple([i for i in range(k)]) # if there is a degenerate case, we stop
-                    the_simplex = candidate #no? that will pre-select points...
+                    the_simplex = candidate
                     foundIt = True
                     break
             
