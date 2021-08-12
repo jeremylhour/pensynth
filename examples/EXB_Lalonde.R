@@ -1,7 +1,7 @@
 #' Empirical Application : Lalonde Data
 #' A Penalized Synthetic Control for Disaggregated Data
 #' 02/04/2020
-#' @author jeremylhour
+#' @author : jeremylhour
 
 rm(list=ls())
 

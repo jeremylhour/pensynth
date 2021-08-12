@@ -1,9 +1,7 @@
-### Delaunay Example for Paper
-### Jeremy L Hour
-### 26 decembre 2018
+#' Delaunay Example for Paper
+#' 26 decembre 2018
+#' @author : jeremylhour
 
-# setwd("//ulysse/users/JL.HOUR/1A_These/A. Research/RegSynthProject/regsynth")
-setwd("/Users/jeremylhour/Documents/Recherche/RegSynthProject/regsynth")
 rm(list=ls())
 
 ### 0. Settings

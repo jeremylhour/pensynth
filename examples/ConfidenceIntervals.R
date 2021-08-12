@@ -1,9 +1,8 @@
-### Penalized Synthetic Control
-### Confidence intervals
-### Jeremy L Hour
-### 21 octobre 2016
+#' Confidence intervals
+#' Penalized Synthetic control
+#' 21 octobre 2016
+# @author : jeremylhour
 
-setwd("//ulysse/users/JL.HOUR/1A_These/A. Research/RegSynthProject/regsynth")
 rm(list=ls())
 
 ### 0. Settings
@@ -17,17 +16,8 @@ library("reshape2")
 library("LowRankQP")
 
 ### Load user functions
-source("functions/wsol.R")
-source("functions/wsoll1.R")
 source("functions/matchDGP.R")
-source("functions/wATT.R")
-source("functions/matching.R")
-source("functions/matchest.R")
 source("functions/regsynth.R")
-source("functions/regsynthpath.R")
-source("functions/TZero.R")
-source("functions/synthObj.R")
-source("functions/perm.test.R")
 source("functions/conf.interval.R")
 
 ### 0. Generate data

@@ -60,9 +60,7 @@ if __name__=='__main__':
 
     start_time = time.time()
     for index in range(len(X1_full)):
-        sys.stdout.write("\r{0}".format(index))
-        sys.stdout.flush()
-
+        print(f"Computing synthetic control for unit {index+1} out of {len(X1_full)}.")
         x = X1_full[index]
         sameAsUntreated = np.all(X0==x, axis=1) # True if untreated is same as treated
 
@@ -73,10 +71,10 @@ if __name__=='__main__':
             inHullFlag = in_hull(x=x, points=X0)
             if inHullFlag:
                 X0_tilde, antiranks = incremental_pure_synth(X1=x, X0=X0)
-                w = pensynth_weights(X0=np.transpose(X0_tilde), X1=x, pen=1e-06)
+                w = pensynth_weights(X0=np.transpose(X0_tilde), X1=x, pen=0)
                 allW[index, antiranks] = np.transpose(w)
             else:
-                w = pensynth_weights(X0=np.transpose(X0), X1=X1_full[index], pen=0)
+                w = pensynth_weights(X0=np.transpose(X0), X1=x, pen=1e-6)
                 allW[index,] = np.transpose(w)
     print(f"Time elapsed : {(time.time() - start_time):.2f} seconds ---")
 
@@ -106,4 +104,5 @@ if __name__=='__main__':
 
     ########## Any unit with sparsity > p+1 ?  -- as a check ##########
     high_sparsity = np.where(sparsity_index>11)[0][0]
+    print(f'{len(high_sparsity)} treated units have sparsity larger than p+1.')
     w_s = allW[high_sparsity,]

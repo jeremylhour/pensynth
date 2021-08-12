@@ -182,7 +182,7 @@ def incremental_pure_synth(X1, X0):
     return X0[antiRanks_tilde,], antiRanks_tilde
 
 
-def pensynth_weights(X0, X1, pen=0, **kwargs):
+def pensynth_weights(X0, X1, pen=0.0, **kwargs):
     """
     pensynth_weights:
         computes penalized synthetic control weights with penalty pen
@@ -207,6 +207,9 @@ def pensynth_weights(X0, X1, pen=0, **kwargs):
     h = matrix(np.concatenate((np.ones(n), np.zeros(n))))
     # SOLUTION
     solvers.options['show_progress'] = False
+    solvers.options['abstol'] = 1e-8
+    solvers.options['reltol'] = 1e-8
+    solvers.options['maxiters'] = 500
     sol = solvers.qp(P, q, G, h, A, b)
     return Tzero(np.array(sol['x']))
 
