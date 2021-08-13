@@ -7,7 +7,6 @@ Created on Sun Nov  1 10:51:38 2020
 
 @author: jeremylhour
 """
-import sys
 import numpy as np
 import pandas as pd
 import time

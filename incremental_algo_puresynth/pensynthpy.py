@@ -9,7 +9,6 @@ Refactored : 30/07/2021
 
 @author: jeremylhour
 """
-import sys
 import numpy as np
 import math
 import itertools
@@ -73,7 +72,7 @@ def compute_radius_and_barycenter(nodes):
     """
     compute_radius_and_barycenter: 
         returns radius, coordinates of barycenter
-        for hypersphere circumscribed hypersphere for these points
+        for circumscribed hypersphere for these points
         
     @param nodes (np.array): array of dimension (p+1) x p of the p+1 points in p dimension
     
@@ -187,25 +186,29 @@ def pensynth_weights(X0, X1, pen=0.0, **kwargs):
     pensynth_weights:
         computes penalized synthetic control weights with penalty pen
     
+    See "A Penalized Synthetic Control Estimator for Disaggregated Data"
+    
     @param X0 (np.array): p x n matrix of untreated units
     @param X1 (np.array): p x 1 matrix of the treated unit
     @param pen (float): lambda, positive tuning parameter
     """
     V = kwargs.get('V', np.identity(len(X0)))
+    
     # OBJECTIVE
-    n = X0.shape[1]
-    delta = np.diag((X0 - np.reshape(np.repeat(X1,n,axis=0), (len(X1),n))).T.dot(V.dot(X0 - np.reshape(np.repeat(X1,n,axis=0), (len(X1),n)))))
-    P = (X0.T).dot(V.dot(X0))
-    P = matrix(P)
-    q = -X0.T.dot(V.dot(X1)) + (pen/2)*delta
-    q = matrix(q)
-    # ADDING-UP
-    A = matrix(1.0,(1,n))
+    n0 = X0.shape[1]
+    delta = np.matmul((np.transpose(X0)-X1)**2, np.diag(V))
+    P = matrix(np.matmul(np.matmul(np.transpose(X0), V), X0))
+    q = matrix(-np.matmul(np.matmul(np.transpose(X0), V), X1) + (pen/2)*delta)
+    
+    # ADDING-UP TO ONE
+    A = matrix(1.0, (1,n0))
     b = matrix(1.0)
+    
     # NON-NEGATIVITY
-    G = matrix(np.concatenate((np.identity(n), -np.identity(n))))
-    h = matrix(np.concatenate((np.ones(n), np.zeros(n))))
-    # SOLUTION
+    G = matrix(-np.identity(n0))
+    h = matrix(np.zeros(n0))
+    
+    # COMPUTE SOLUTION
     solvers.options['show_progress'] = False
     solvers.options['abstol'] = 1e-8
     solvers.options['reltol'] = 1e-8
@@ -214,9 +217,9 @@ def pensynth_weights(X0, X1, pen=0.0, **kwargs):
     return Tzero(np.array(sol['x']))
 
 
-if __name__=='__main__':
+if __name__=='__main__':    
     # Test with simulated data
-    n = 21
+    n = 11
     p = 5
 
     X = np.random.normal(0, 1, size=(n, p))
@@ -242,7 +245,7 @@ if __name__=='__main__':
     print(f"Temps d'exécution total : {(time.time() - start_time):.7f} secondes ---")
 
     print("="*80)
-    print("Method 2 : in-house algorithm")
+    print("Method 2 : incremental algorithm")
     print("="*80)
     
     start_time = time.time()
