@@ -10,9 +10,9 @@ Refactored : 30/07/2021
 @author: jeremylhour
 """
 import numpy as np
-import math
 import itertools
 import time
+from numba import njit
 
 from scipy.spatial.distance import cdist
 from scipy.optimize import linprog
@@ -24,6 +24,7 @@ from scipy.spatial import Delaunay
 # ------------------------------------------------------------------------------
 # UTILS
 # ------------------------------------------------------------------------------
+@njit
 def closest_points(node, nodes, k=1):
     """
     closest_points:
@@ -33,11 +34,11 @@ def closest_points(node, nodes, k=1):
     @param nodes (np.array): points that are candidate neighbors
     @param k (int): how many neighbors to return?
     """
-    deltas = nodes - node
-    dist_2 = np.einsum('ij,ij->i', deltas, deltas)
+    dist_2 = np.diag((nodes - node) @ np.transpose(nodes - node))
     ranks = [sorted(dist_2).index(x) for x in dist_2]
     return nodes[[r<=k-1 for r in ranks]]
 
+@njit
 def get_ranks(node, nodes):
     """
     get_ranks:
@@ -46,8 +47,7 @@ def get_ranks(node, nodes):
     @param node (np.array): point for which we want to find the neighbors
     @param nodes (np.array): points that are candidate neighbors
     """
-    deltas = nodes - node
-    dist_2 = np.einsum('ij,ij->i', deltas, deltas)
+    dist_2 = np.diag((nodes - node) @ np.transpose(nodes - node))
     ranks = np.array([sorted(dist_2).index(x) for x in dist_2])
     return ranks, np.argsort(ranks)
 
@@ -80,29 +80,27 @@ def compute_radius_and_barycenter(nodes):
         https://math.stackexchange.com/questions/1087011/calculating-the-radius-of-the-circumscribed-sphere-of-an-arbitrary-tetrahedron
     """
     p = nodes.shape[1]
-    theta = np.ones(p+1)
-    Lambda = cdist(nodes, nodes)**2
     
     Delta = np.zeros((p+2, p+2))
-    Delta[0,] = np.concatenate(([0], theta), axis=0)
-    Delta[:,0] = np.concatenate(([0], theta), axis=0)
-    Delta[1:,1:] = Lambda
+    Delta[0,] = np.concatenate(([0], np.ones(p+1)), axis=0)
+    Delta[:,0] = np.concatenate(([0], np.ones(p+1)), axis=0)
+    Delta[1:,1:] = cdist(nodes, nodes)**2
     
     a = np.linalg.inv(Delta)[:,0]
     return np.sqrt(-a[0]/2), np.matmul(a[1:],nodes)
       
+@njit
 def inside_sphere(nodes, barycenter, radius):
     """
     inside_ball: 
         find if any of the nodes is inside the given sphere
         
     @param nodes (np.array): points to check if inside
-    @param barycenter: coordinates of the barycenter
+    @param barycenter (np.array): coordinates of the barycenter
     @param radius (float): radius
     """
-    deltas = nodes - barycenter
-    dist_2 = np.einsum('ij,ij->i', deltas, deltas)
-    return any([np.sqrt(d) < radius for d in dist_2])
+    dist_2 = np.diag((nodes - barycenter) @ np.transpose(nodes - barycenter))
+    return np.any(np.array([item < radius**2 for item in dist_2]))
 
 def Tzero(w, tol=1e-5):
     """
@@ -165,7 +163,7 @@ def incremental_pure_synth(X1, X0):
                 except:
                     r = np.nan
                 
-                if math.isnan(r): # if there is a degenerate case, we stop
+                if np.isnan(r): # if there is a degenerate case, we stop
                     the_simplex = candidate
                     foundIt = True
                     break
@@ -181,24 +179,26 @@ def incremental_pure_synth(X1, X0):
     return X0[antiRanks_tilde,], antiRanks_tilde
 
 
-def pensynth_weights(X0, X1, pen=0.0, **kwargs):
+def pensynth_weights(X0, X1, pen=0.0, V=None):
     """
     pensynth_weights:
         computes penalized synthetic control weights with penalty pen
     
     See "A Penalized Synthetic Control Estimator for Disaggregated Data"
     
-    @param X0 (np.array): p x n matrix of untreated units
-    @param X1 (np.array): p x 1 matrix of the treated unit
+    @param X0 (np.array): n x p matrix of untreated units
+    @param X1 (np.array): 1 x p matrix of the treated unit
     @param pen (float): lambda, positive tuning parameter
+    @param V (np.array): weights for the norm
     """
-    V = kwargs.get('V', np.identity(len(X0)))
+    if V is None:
+        V = np.identity(X0.shape[1])
+    n0 = len(X0)
     
     # OBJECTIVE
-    n0 = X0.shape[1]
-    delta = np.matmul((np.transpose(X0)-X1)**2, np.diag(V))
-    P = matrix(np.matmul(np.matmul(np.transpose(X0), V), X0))
-    q = matrix(-np.matmul(np.matmul(np.transpose(X0), V), X1) + (pen/2)*delta)
+    delta = np.diag((X0-X1) @ V @ np.transpose(X0-X1))
+    P = matrix(X0 @ V @ np.transpose(X0))
+    q = matrix(-X0 @ V @ X1 + (pen/2)*delta)
     
     # ADDING-UP TO ONE
     A = matrix(1.0, (1,n0))
