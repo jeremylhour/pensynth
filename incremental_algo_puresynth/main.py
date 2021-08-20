@@ -63,17 +63,15 @@ if __name__=='__main__':
         sameAsUntreated = np.all(X0==x, axis=1) # True if untreated is same as treated
 
         if any(sameAsUntreated):
-            untreatedId = [i for i, flag in enumerate(sameAsUntreated) if flag]
+            untreatedId = np.where(sameAsUntreated)
             allW[i, untreatedId] = 1/len(untreatedId)
         else:
             inHullFlag = in_hull(x=x, points=X0)
             if inHullFlag:
                 X0_tilde, antiranks = incremental_pure_synth(X1=x, X0=X0)
-                w = pensynth_weights(X0=X0_tilde, X1=x, pen=0)
-                allW[i, antiranks] = np.transpose(w)
+                allW[i, antiranks] = pensynth_weights(X0=X0_tilde, X1=x, pen=0)
             else:
-                w = pensynth_weights(X0=X0, X1=x, pen=1e-6)
-                allW[i,] = np.transpose(w)
+                allW[i,] = pensynth_weights(X0=X0, X1=x, pen=1e-6)
     print(f"Time elapsed : {(time.time() - start_time):.2f} seconds ---")
 
 
@@ -84,11 +82,11 @@ if __name__=='__main__':
     np.savetxt('puresynth_solution.csv', allW, delimiter=',')
 
     ########## Compute the necessary statistics ##########
-    Y0_hat = np.matmul(allW, Y0)
+    Y0_hat = allW @ Y0
 
-    print('ATT: {:.2f}'.format((Y1_full - Y0_hat).mean()))
+    print('ATT: {:.2f}'.format((Y1_full - Y0_hat).mean(axis=0)))
 
-    balance_check = np.matmul(allW, X0_unscaled).mean(axis=0)
+    balance_check = (allW @ X0_unscaled).mean(axis=0)
     for b in range(len(balance_check)):
         print(X_names[b] +': {:.2f}'.format(balance_check[b]))
 

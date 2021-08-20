@@ -214,7 +214,7 @@ def pensynth_weights(X0, X1, pen=0.0, V=None):
     solvers.options['reltol'] = 1e-8
     solvers.options['maxiters'] = 500
     sol = solvers.qp(P, q, G, h, A, b)
-    return Tzero(np.array(sol['x']))
+    return Tzero(np.squeeze(np.array(sol['x'])))
 
 
 if __name__=='__main__':    
