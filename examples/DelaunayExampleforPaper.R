@@ -18,13 +18,9 @@ library("deldir")
 library("plotrix")
 
 ### Load user functions
-source("functions/wsol.R")
 source("functions/wsoll1.R")
-source("functions/PolyDGP.R")
-source("functions/wATT.R")
-source("functions/matching.R")
-source("functions/matchest.R")
-source("functions/OBest.R")
+source("functions/DGP_Poly.R")
+source("functions/estimator_matching.R")
 source("functions/regsynth.R")
 source("functions/regsynthpath.R")
 source("functions/TZero.R")
@@ -165,7 +161,7 @@ points(t(Xnn), pch=16, col="black", cex=1, lwd=5)
 
 ### Putting everything together
 ### Panel A: Dots and Delaunay triangulation
-pdf(file="plot/DTPanelA.pdf", height=6, width=6)
+jpeg(file="plot/DTPanelA.jpg", height=1000, width=1000)
 plot(c(X0[1,],X1[,1]), c(X0[2,],X1[,2]), type="n", asp=1,xlim=c(0.2,.3),ylim=c(.2,.6),
      xlab="",ylab="",xaxt='n', ann=FALSE, yaxt='n')
 #points(X0[1,], X0[2,], pch=1, col="black", cex=1, lwd=2)
