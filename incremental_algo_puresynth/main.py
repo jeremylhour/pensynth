@@ -19,6 +19,8 @@ if __name__=='__main__':
     print('This is a script to compute the pure synthetic control solution for Lalonde (1986) data.')
     now = datetime.now()
     print(f"Launched on {now.strftime('%d, %b %Y, %H:%M:%S')} \n")
+    print("Note : run downloadLalondeData.R script first.")
+    
     
     print("="*80)
     print("DATA MANAGEMENT")
@@ -59,12 +61,11 @@ if __name__=='__main__':
     # - if the treated is not inside the convex hull defined by the untreated, run the standard synthetic control.
     
     allW = np.zeros((len(X1_full), len(X0)))
-
     start_time = time.time()
+    print("Computing synthetic control for unit :"")
     for i, x in enumerate(X1_full):
-        print(f"Computing synthetic control for unit {i+1} out of {len(X1_full)}.")
+        print(f"    {i+1} out of {len(X1_full)}.")
         sameAsUntreated = np.all(X0==x, axis=1) # True if untreated is same as treated
-
         if any(sameAsUntreated):
             untreatedId = np.where(sameAsUntreated)
             allW[i, untreatedId] = 1/len(untreatedId)
@@ -79,14 +80,10 @@ if __name__=='__main__':
 
 
     print("="*80)
-    print("SAVING RESULTS AND COMPUTING STATISTICS")
+    print("COMPUTING STATISTICS AND SAVING RESULTS")
     print("="*80)
-    
-    df = pd.DataFrame(allW)
-    df.columns = ["Unit_"+str(i+1) for i in range(len(X0))]
-    df.to_parquet("Lalonde_solution.parquet", engine="pyarrow")
 
-    ########## Compute the necessary statistics ##########
+    ########## COMPUTE THE NECESSARY STATISTICS ##########
     Y0_hat = allW @ Y0
     balance_check = (allW @ X0_unscaled).mean(axis=0)
 
@@ -102,8 +99,15 @@ if __name__=='__main__':
 
     activ_index = (allW > 0).sum(axis=0)>0
     print('Active untreated units: {:.0f}'.format(activ_index.sum()))
-
-    ########## Any unit with sparsity > p+1 ?  -- as a check ##########
+    
+    
+    ########## SAVING AS PARQUET FILE ##########
+    df = pd.DataFrame(allW)
+    df.columns = ["Unit_"+str(i+1) for i in range(len(X0))]
+    df.to_parquet("Lalonde_solution.parquet", engine="pyarrow")
+    
+    
+    ########## SANITY CHECK ON SPARSITY ##########
     high_sparsity = np.where(sparsity_index>11)[0][0]
     print(f'{len(high_sparsity)} treated units have sparsity larger than p+1.')
     w_s = allW[high_sparsity,]
