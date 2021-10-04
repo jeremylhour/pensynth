@@ -10,12 +10,15 @@ Created on Sun Nov  1 10:51:38 2020
 import numpy as np
 import pandas as pd
 import time
+from datetime import datetime
 
 from pensynthpy import in_hull, incremental_pure_synth, pensynth_weights
 
 
 if __name__=='__main__':
     print('This is a script to compute the pure synthetic control solution for Lalonde (1986) data.')
+    now = datetime.now()
+    print(f"Launched on {now.strftime('%d, %b %Y, %H:%M:%S')} \n")
     
     print("="*80)
     print("DATA MANAGEMENT")
@@ -69,7 +72,7 @@ if __name__=='__main__':
             inHullFlag = in_hull(x=x, points=X0)
             if inHullFlag:
                 X0_tilde, antiranks = incremental_pure_synth(X1=x, X0=X0)
-                allW[i, antiranks] = pensynth_weights(X0=X0_tilde, X1=x, pen=0)
+                allW[i, antiranks] = pensynth_weights(X0=X0_tilde, X1=x, pen=1e-6)
             else:
                 allW[i,] = pensynth_weights(X0=X0, X1=x, pen=1e-6)
     print(f"Time elapsed : {(time.time() - start_time):.2f} seconds ---")
@@ -79,16 +82,18 @@ if __name__=='__main__':
     print("SAVING RESULTS AND COMPUTING STATISTICS")
     print("="*80)
     
-    np.savetxt('puresynth_solution.csv', allW, delimiter=',')
+    df = pd.DataFrame(allW)
+    df.columns = ["Unit_"+str(i+1) for i in range(len(X0))]
+    df.to_parquet("Lalonde_solution.parquet", engine="pyarrow")
 
     ########## Compute the necessary statistics ##########
     Y0_hat = allW @ Y0
-
-    print('ATT: {:.2f}'.format((Y1_full - Y0_hat).mean(axis=0)))
-
     balance_check = (allW @ X0_unscaled).mean(axis=0)
-    for b in range(len(balance_check)):
-        print(X_names[b] +': {:.2f}'.format(balance_check[b]))
+
+    print('ATT: {:.3f}'.format((Y1_full - Y0_hat).mean(axis=0)))
+
+    for b, value in enumerate(balance_check):
+        print(X_names[b] +': {:.3f}'.format(value))
 
     sparsity_index = (allW > 0).sum(axis=1)
     print('Min sparsity: {:.0f}'.format(sparsity_index.min()))
