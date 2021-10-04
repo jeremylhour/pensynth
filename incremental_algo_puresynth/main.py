@@ -62,7 +62,7 @@ if __name__=='__main__':
     
     allW = np.zeros((len(X1_full), len(X0)))
     start_time = time.time()
-    print("Computing synthetic control for unit :"")
+    print("Computing synthetic control for unit :")
     for i, x in enumerate(X1_full):
         print(f"    {i+1} out of {len(X1_full)}.")
         sameAsUntreated = np.all(X0==x, axis=1) # True if untreated is same as treated
@@ -73,9 +73,9 @@ if __name__=='__main__':
             inHullFlag = in_hull(x=x, points=X0)
             if inHullFlag:
                 X0_tilde, antiranks = incremental_pure_synth(X1=x, X0=X0)
-                allW[i, antiranks] = pensynth_weights(X0=X0_tilde, X1=x, pen=1e-6)
+                allW[i, antiranks] = pensynth_weights(X0=X0_tilde, X1=x, pen=1e-5)
             else:
-                allW[i,] = pensynth_weights(X0=X0, X1=x, pen=1e-6)
+                allW[i,] = pensynth_weights(X0=X0, X1=x, pen=1e-5)
     print(f"Time elapsed : {(time.time() - start_time):.2f} seconds ---")
 
 
