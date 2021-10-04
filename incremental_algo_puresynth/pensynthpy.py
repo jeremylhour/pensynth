@@ -102,6 +102,7 @@ def inside_sphere(nodes, barycenter, radius):
     dist_2 = np.diag((nodes - barycenter) @ np.transpose(nodes - barycenter))
     return np.any(np.array([item < radius**2 for item in dist_2]))
 
+@njit
 def Tzero(w, tol=1e-5):
     """
     Tzero:
