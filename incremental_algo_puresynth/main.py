@@ -16,10 +16,10 @@ from pensynthpy import in_hull, incremental_pure_synth, pensynth_weights
 
 
 if __name__=='__main__':
-    print('This is a script to compute the pure synthetic control solution for Lalonde (1986) data.')
     now = datetime.now()
+    print('This is a script to compute the pure synthetic control solution for Lalonde (1986) data.\n')
     print(f"Launched on {now.strftime('%d, %b %Y, %H:%M:%S')} \n")
-    print("Note : run downloadLalondeData.R script first.")
+    print("Note : run downloadLalondeData.R script first.\n")
     
     
     print("="*80)
@@ -67,13 +67,12 @@ if __name__=='__main__':
         print(f"    {i+1} out of {len(X1_full)}.")
         sameAsUntreated = np.all(X0==x, axis=1) # True if untreated is same as treated
         if any(sameAsUntreated):
-            print("SAME AS UNTREATED")
             untreatedId = np.where(sameAsUntreated)
             allW[i, untreatedId] = 1/len(untreatedId)
         else:
             inHullFlag = in_hull(x=x, points=X0)
             if inHullFlag:
-                X0_tilde, antiranks, _ = incremental_pure_synth(X1=x, X0=X0)
+                X0_tilde, antiranks = incremental_pure_synth(X1=x, X0=X0)
                 allW[i, antiranks] = pensynth_weights(X0=X0_tilde, X1=x, pen=0)
             else:
                 allW[i,] = pensynth_weights(X0=X0, X1=x, pen=1e-6)

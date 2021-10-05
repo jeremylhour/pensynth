@@ -79,7 +79,7 @@ def compute_radius_and_barycenter(nodes):
     Source:
         https://math.stackexchange.com/questions/1087011/calculating-the-radius-of-the-circumscribed-sphere-of-an-arbitrary-tetrahedron
         
-    Note : normally, it should return np.sqrt(-a[0]/2), a[1:] @ nodes, but overflow can occur so I force a positive value
+    Note : normally, it should return np.sqrt(-a[0]/2), a[1:] @ nodes, but overflow can occur so I force a positive value inside sqrt
     """
     p = nodes.shape[1]
     
@@ -132,17 +132,17 @@ def incremental_pure_synth(X1, X0):
     """
     # get the ranks and anti-ranks of X0 with respect to their distances to X1
     ranks, antiRanks = get_ranks(X1, X0)
-    N0, p = X0.shape
+    n0, p = X0.shape
     
     # Initialize variables
-    foundIt, inHullFlag, numericalError = False, False, False
+    foundIt, inHullFlag = False, False
     
     ### BIG LOOP ###
     # We loop over number of possible points, starting from p+1
-    for k in range(p+1, N0+1):        
+    for k in range(p+1, n0+1):        
         # init the_simplex variable if there is a problem
         # when points is not inside convex hull, returns all the points
-        the_simplex =  tuple(range(k)) # init if there is a problem
+        the_simplex =  tuple(range(k))
         
         # 1. Set of 'k' nearest neighbors
         X_NN = X0[antiRanks[:k],]
@@ -158,8 +158,8 @@ def incremental_pure_synth(X1, X0):
         #  (since previous simplices did not contain X1,
         #   we need only to consider the simplices that have the new nearest neighbors as a vertex)
         # ...check if a point in X0 is contained in the circumscribing hypersphere of any of these simplices
-        for i in itertools.combinations(range(k-1),p):
-            candidate = i + (k-1,)
+        for item in itertools.combinations(range(k-1),p):
+            candidate = item + (k-1,)
             if in_hull(X1, X_NN[candidate,]):
                 try:
                     radius, center = compute_radius_and_barycenter(X_NN[candidate,]) # sometimes gives an error if points have the same values for a particular X0
@@ -167,7 +167,6 @@ def incremental_pure_synth(X1, X0):
                     radius = np.nan
                 
                 if np.isnan(radius): # if there is a degenerate case, we stop
-                    numericalError = True
                     the_simplex = candidate
                     foundIt = True
                     break
@@ -180,7 +179,7 @@ def incremental_pure_synth(X1, X0):
             break
             
     antiRanks_tilde = sorted(antiRanks[the_simplex,])
-    return X0[antiRanks_tilde,], antiRanks_tilde, numericalError
+    return X0[antiRanks_tilde,], antiRanks_tilde
 
 
 def pensynth_weights(X0, X1, pen=0.0, V=None):
@@ -253,6 +252,6 @@ if __name__=='__main__':
     print("="*80)
     
     start_time = time.time()
-    simplex, _, _ = incremental_pure_synth(X1=X1, X0=X0)
+    simplex, _ = incremental_pure_synth(X1=X1, X0=X0)
     print(simplex)
     print(f"Temps d'exécution total : {(time.time() - start_time):.7f} secondes ---")
