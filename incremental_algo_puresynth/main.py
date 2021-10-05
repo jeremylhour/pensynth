@@ -72,10 +72,13 @@ if __name__=='__main__':
         else:
             inHullFlag = in_hull(x=x, points=X0)
             if inHullFlag:
-                X0_tilde, antiranks = incremental_pure_synth(X1=x, X0=X0)
-                allW[i, antiranks] = pensynth_weights(X0=X0_tilde, X1=x, pen=1e-5)
+                X0_tilde, antiranks, numericalError = incremental_pure_synth(X1=x, X0=X0)
+                if numericalError: # if numerical error when computing the reduced simplex
+                    allW[i, antiranks] = pensynth_weights(X0=X0_tilde, X1=x, pen=5e-4)
+                else:
+                    allW[i, antiranks] = pensynth_weights(X0=X0_tilde, X1=x, pen=0)
             else:
-                allW[i,] = pensynth_weights(X0=X0, X1=x, pen=1e-5)
+                allW[i,] = pensynth_weights(X0=X0, X1=x, pen=1e-6)
     print(f"Time elapsed : {(time.time() - start_time):.2f} seconds ---")
 
 
@@ -108,6 +111,5 @@ if __name__=='__main__':
     
     
     ########## SANITY CHECK ON SPARSITY ##########
-    high_sparsity = np.where(sparsity_index>11)[0][0]
+    high_sparsity = np.where(sparsity_index>11)[0]
     print(f'{len(high_sparsity)} treated units have sparsity larger than p+1.')
-    w_s = allW[high_sparsity,]

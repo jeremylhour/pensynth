@@ -133,7 +133,7 @@ def incremental_pure_synth(X1, X0):
     N0, p = X0.shape
     
     # Initialize variables
-    foundIt, inHullFlag = False, False
+    foundIt, inHullFlag, numericalError = False, False, False
     
     ### BIG LOOP ###
     # We loop over number of possible points, starting from p+1
@@ -160,16 +160,17 @@ def incremental_pure_synth(X1, X0):
             candidate = i + (k-1,)
             if in_hull(X1, X_NN[candidate,]):
                 try:
-                    r, c = compute_radius_and_barycenter(X_NN[candidate,]) # sometimes gives an error if points have the same values for a particular X0
+                    radius, center = compute_radius_and_barycenter(X_NN[candidate,]) # sometimes gives an error if points have the same values for a particular X0
                 except:
-                    r = np.nan
+                    radius = np.nan
                 
-                if np.isnan(r): # if there is a degenerate case, we stop
-                    the_simplex = candidate
+                if np.isnan(radius): # if there is a degenerate case, we stop
+                    numericalError = True
+                    #the_simplex = tuple([i for i in range(k-1)])
                     foundIt = True
                     break
             
-                if not inside_sphere(np.delete(X0, antiRanks[candidate,], 0), c, r):
+                if not inside_sphere(np.delete(X0, antiRanks[candidate,], 0), center, radius):
                     the_simplex = candidate
                     foundIt = True
                     break
@@ -177,7 +178,7 @@ def incremental_pure_synth(X1, X0):
             break
             
     antiRanks_tilde = sorted(antiRanks[the_simplex,])
-    return X0[antiRanks_tilde,], antiRanks_tilde
+    return X0[antiRanks_tilde,], antiRanks_tilde, numericalError
 
 
 def pensynth_weights(X0, X1, pen=0.0, V=None):
@@ -250,6 +251,6 @@ if __name__=='__main__':
     print("="*80)
     
     start_time = time.time()
-    simplex = incremental_pure_synth(X1=X1, X0=X0)
+    simplex, _, _ = incremental_pure_synth(X1=X1, X0=X0)
     print(simplex)
     print(f"Temps d'exécution total : {(time.time() - start_time):.7f} secondes ---")
