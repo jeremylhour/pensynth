@@ -1,3 +1,9 @@
+numpy
+itertools
+time
+datetime
+scipy
+pandas
 cvxopt
 numba
 pyarrow
