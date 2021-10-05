@@ -78,6 +78,8 @@ def compute_radius_and_barycenter(nodes):
     
     Source:
         https://math.stackexchange.com/questions/1087011/calculating-the-radius-of-the-circumscribed-sphere-of-an-arbitrary-tetrahedron
+        
+    Note : normally, it should return np.sqrt(-a[0]/2), a[1:] @ nodes, but overflow can occur so I force a positive value
     """
     p = nodes.shape[1]
     
@@ -87,7 +89,7 @@ def compute_radius_and_barycenter(nodes):
     Delta[1:,1:] = cdist(nodes, nodes)**2
     
     a = np.linalg.inv(Delta)[:,0]
-    return np.sqrt(-a[0]/2), np.matmul(a[1:],nodes)
+    return np.sqrt(np.abs(a[0])/2), a[1:] @ nodes
       
 @njit
 def inside_sphere(nodes, barycenter, radius):
@@ -166,7 +168,7 @@ def incremental_pure_synth(X1, X0):
                 
                 if np.isnan(radius): # if there is a degenerate case, we stop
                     numericalError = True
-                    #the_simplex = tuple([i for i in range(k-1)])
+                    the_simplex = candidate
                     foundIt = True
                     break
             
