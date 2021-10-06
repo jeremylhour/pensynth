@@ -68,13 +68,14 @@ def in_hull(x, points):
         lp = linprog(c, A_eq=A, b_eq=b)
     return lp.success
 
-def compute_radius_and_barycenter(nodes):
+def compute_radius_and_barycenter(nodes, fix_overflow=True):
     """
     compute_radius_and_barycenter: 
         returns radius, coordinates of barycenter
         for circumscribed hypersphere for these points
         
     @param nodes (np.array): array of dimension (p+1) x p of the p+1 points in p dimension
+    @param fix_overflow (bool): if True brutally fixes the overflow
     
     Source:
         https://math.stackexchange.com/questions/1087011/calculating-the-radius-of-the-circumscribed-sphere-of-an-arbitrary-tetrahedron
@@ -89,8 +90,10 @@ def compute_radius_and_barycenter(nodes):
     Delta[1:,1:] = cdist(nodes, nodes)**2
     
     a = np.linalg.inv(Delta)[:,0]
-    return np.sqrt(np.abs(a[0])/2), a[1:] @ nodes
-      
+    if fix_overflow:
+        return np.sqrt(np.abs(a[0])/2), a[1:] @ nodes
+    else:
+        return np.sqrt(-a[0]/2), a[1:] @ nodes
 @njit
 def inside_sphere(nodes, barycenter, radius):
     """

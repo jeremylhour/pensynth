@@ -11,6 +11,7 @@ import numpy as np
 import pandas as pd
 import time
 from datetime import datetime
+from tqdm import tqdm
 
 from pensynthpy import in_hull, incremental_pure_synth, pensynth_weights
 
@@ -62,20 +63,20 @@ if __name__=='__main__':
     
     allW = np.zeros((len(X1_full), len(X0)))
     start_time = time.time()
-    print("Computing synthetic control for unit :")
-    for i, x in enumerate(X1_full):
-        print(f"    {i+1} out of {len(X1_full)}.")
-        sameAsUntreated = np.all(X0==x, axis=1) # True if untreated is same as treated
-        if any(sameAsUntreated):
-            untreatedId = np.where(sameAsUntreated)
-            allW[i, untreatedId] = 1/len(untreatedId)
-        else:
-            inHullFlag = in_hull(x=x, points=X0)
-            if inHullFlag:
-                X0_tilde, antiranks = incremental_pure_synth(X1=x, X0=X0)
-                allW[i, antiranks] = pensynth_weights(X0=X0_tilde, X1=x, pen=0)
+    with tqdm(total=(len(X1_full))) as prog:
+        for i, x in enumerate(X1_full):
+            sameAsUntreated = np.all(X0==x, axis=1) # True if untreated is same as treated
+            if any(sameAsUntreated):
+                untreatedId = np.where(sameAsUntreated)
+                allW[i, untreatedId] = 1/len(untreatedId)
             else:
-                allW[i,] = pensynth_weights(X0=X0, X1=x, pen=1e-6)
+                inHullFlag = in_hull(x=x, points=X0)
+                if inHullFlag:
+                    X0_tilde, antiranks = incremental_pure_synth(X1=x, X0=X0)
+                    allW[i, antiranks] = pensynth_weights(X0=X0_tilde, X1=x, pen=0)
+                else:
+                    allW[i,] = pensynth_weights(X0=X0, X1=x, pen=1e-6)
+            prog.update(1)
     print(f"Time elapsed : {(time.time() - start_time):.2f} seconds ---")
 
 
@@ -100,14 +101,22 @@ if __name__=='__main__':
     activ_index = (allW > 0).sum(axis=0)>0
     print('Active untreated units: {:.0f}'.format(activ_index.sum()))
     
-    
-    ########## SAVING AS PARQUET FILE ##########
+    ########## SAVING WEIGHTS AS PARQUET FILE ##########
     df = pd.DataFrame(allW)
     df.columns = ["Unit_"+str(i+1) for i in range(len(X0))]
     df.to_parquet("Lalonde_solution.parquet", engine="pyarrow")
-    
     
     ########## SANITY CHECK ON SPARSITY ##########
     high_sparsity = np.where(sparsity_index>11)[0]
     print(f'{len(high_sparsity)} treated units have sparsity larger than p+1.')
     print(high_sparsity)
+    
+    ########## DUMPING STATS TO FILE ##########
+    with open('statistics.txt', 'w') as f:
+        f.write('ATT: {:.3f}\n'.format((Y1_full - Y0_hat).mean(axis=0)))
+        for b, value in enumerate(balance_check):
+            f.write(X_names[b] +': {:.3f}\n'.format(value))
+        f.write('Min sparsity: {:.0f}\n'.format(sparsity_index.min()))
+        f.write('Median sparsity: {:.0f}\n'.format(np.median(sparsity_index)))
+        f.write('Max sparsity: {:.0f}\n'.format(sparsity_index.max()))
+        f.write(f'{len(high_sparsity)} treated units have sparsity larger than p+1.')
