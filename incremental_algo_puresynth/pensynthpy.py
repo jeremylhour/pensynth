@@ -30,25 +30,6 @@ solvers.options["maxiters"] = 500
 # UNIT FUNCTIONS
 # ------------------------------------------------------------------------------
 @njit
-def find_knn(node, nodes, k: int = 1):
-    """
-    find_knn:
-        find the k nearest neighbors of node amongst nodes.
-
-    Args:
-        node (np.array): point for which we want to find the neighbors
-        nodes (np.array): points that are candidate neighbors
-        k (int): how many neighbors to return?
-
-    Returns:
-        np.array: the k nearest neighbors of node amongst nodes.
-    """
-    dist_2 = np.diag((nodes - node) @ (nodes - node).T)
-    ranks = [sorted(dist_2).index(x) for x in dist_2]
-    return nodes[[r <= k - 1 for r in ranks]]
-
-
-@njit
 def get_ranks(node, nodes):
     """
     get_ranks:
@@ -62,27 +43,27 @@ def get_ranks(node, nodes):
         np.array: the ranks of nodes by rank in closeness to node.
         np.array: the anti-ranks of nodes by rank in closeness to node.
     """
-    dist_2 = np.diag((nodes - node) @ (nodes - node).T)
-    ranks = np.array([sorted(dist_2).index(x) for x in dist_2])
+    dist_ = np.sum((nodes - node) ** 2, axis=1)
+    ranks = np.array([sorted(dist_).index(x) for x in dist_])
     return ranks, np.argsort(ranks)
 
 
 def is_in_hull(x, points):
     """
     is_in_hull:
-        test if points in x are in hull
+        test if x is in the convex hull of points.
 
     Args:
-        x (np.array): should be a (n, p) coordinates of n points in p dimensions
-        points (np.array): the (m, p) array of the coordinates of m points in p dimensions
+        x (np.array): the target point, of dimension p.
+        points (np.array): the (m, p) array of the coordinates of m points in p dimensions that define the convex hull.
 
     Returns:
         bool: True if x is in the convex hull of points, False.
     """
-    n_points = len(points)
-    c = np.zeros(n_points)
-    A = np.r_[points.T, np.ones((1, n_points))]
-    b = np.r_[x, np.ones(1)]
+    n = len(points)
+    c = np.zeros(n)
+    A = np.c_[points, np.ones(n)].T
+    b = np.r_[x, 1.0]
     with warnings.catch_warnings():  # to ignore warning when degenerate cases
         warnings.simplefilter("ignore")
         lp = linprog(c, A_eq=A, b_eq=b)
@@ -151,6 +132,23 @@ def clip_to_zero(x, tol: float = 1e-5):
     return x / np.sum(x)
 
 
+def find_knn(x, points, k: int = 1):
+    """
+    find_knn:
+        find the k nearest neighbors of x node amongst points.
+
+    Args:
+        x (np.array): point for which we want to find the neighbors
+        points (np.array): points that are candidate neighbors
+        k (int): how many neighbors to return?
+
+    Returns:
+        np.array: the k nearest neighbors of x amongst points.
+    """
+    _, anti_ranks = get_ranks(x, points)
+    return points[anti_ranks[:k],]
+
+
 # ------------------------------------------------------------------------------
 # MAIN FUNCTIONS
 # ------------------------------------------------------------------------------
@@ -175,7 +173,7 @@ def incremental_pure_synth(X1, X0):
         X_NN = X0[anti_ranks[:j],]
         if is_in_hull(X1, X_NN):
             break
-        
+
     # For all the subsets of cardinality p + 1 that have x in their convex hull
     #  check if a point in X0 is contained in the circumscribing hypersphere of any of these simplices
     #  (since previous simplices did not contain X1,
@@ -186,11 +184,18 @@ def incremental_pure_synth(X1, X0):
             candidate = item + (k - 1,)
             if is_in_hull(X1, X_NN[candidate,]):
                 try:
-                    radius, center = compute_radius_and_barycenter(X_NN[candidate,])  # sometimes gives an error if points have the same values for a particular X0
+                    radius, center = compute_radius_and_barycenter(
+                        X_NN[candidate,]
+                    )  # sometimes gives an error if points have the same values for a particular X0
                 except:
                     radius = np.nan
 
-                if np.isnan(radius) or not is_inside_sphere(np.delete(X0, anti_ranks[candidate,], 0), center, radius):  # if the circumscribed hypersphere does not contain any other point, we stop
+                if (
+                    np.isnan(radius)
+                    or not is_inside_sphere(
+                        np.delete(X0, anti_ranks[candidate,], 0), center, radius
+                    )
+                ):  # if the circumscribed hypersphere does not contain any other point, we stop
                     anti_ranks_tilde = sorted(anti_ranks[candidate,])
                     return X0[anti_ranks_tilde,], anti_ranks_tilde
 
@@ -239,7 +244,7 @@ if __name__ == "__main__":
     n = 10
     p = 6
 
-    X0 = np.random.normal(0, 1, size=(n, p))
+    X0 = np.random.normal(size=(n, p))
     X1 = X0.mean(axis=0)
 
     is_in_hull_flag = is_in_hull(X1, X0)
