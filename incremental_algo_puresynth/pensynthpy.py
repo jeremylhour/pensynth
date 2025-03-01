@@ -130,8 +130,8 @@ def is_inside_sphere(nodes, barycenter, radius: float):
 
     Args:
         nodes (np.array): points to check if inside
-        barycenter (np.array): coordinates of the barycenter
-        radius (float): radius
+        barycenter (np.array): coordinates of the barycenter of the sphere
+        radius (float): radius of the sphere.
     """
     dist_2 = np.diag((nodes - barycenter) @ (nodes - barycenter).T)
     return np.any(np.array([d < radius**2 for d in dist_2]))
@@ -166,57 +166,37 @@ def incremental_pure_synth(X1, X0):
 
     """
     # get the ranks and anti-ranks of X0 with respect to their distances to X1
-    _, antiRanks = get_ranks(X1, X0)
+    _, anti_ranks = get_ranks(X1, X0)
     n0, p = X0.shape
 
-    # Initialize variables
-    foundIt, inHullFlag = False, False
-
-    # We loop over number of possible points, starting from p+1
-    for k in range(p + 1, n0 + 1):
-        # init the_simplex variable if there is a problem
-        # when points is not inside convex hull, returns all the points
-        the_simplex = tuple(range(k))
-
-        # 1. Check if X1 belongs to the convex hull defined by its k nearest neighbors
-        X_NN = X0[antiRanks[:k],]
-
-        if not inHullFlag:
-            inHullFlag = is_in_hull(X1, X_NN)
-
-        if not inHullFlag:
-            continue  # skip to next iteration if X1 not in convex hull of nearest neighbors
-
-        # 2. For all the subsets of cardinality p+1 that have x in their convex hull...
-        #  (since previous simplices did not contain X1,
-        #   we need only to consider the simplices that have the new nearest neighbors as a vertex)
-        # ...check if a point in X0 is contained in the circumscribing hypersphere of any of these simplices
+    # Find the smallest set of points that contains X1,
+    # by increasing the number of nearest neighbors until X1 is in the convex hull
+    for j in range(p + 1, n0 + 1):
+        X_NN = X0[anti_ranks[:j],]
+        if is_in_hull(X1, X_NN):
+            break
+        
+    # For all the subsets of cardinality p + 1 that have x in their convex hull
+    #  check if a point in X0 is contained in the circumscribing hypersphere of any of these simplices
+    #  (since previous simplices did not contain X1,
+    #   we need only to consider the simplices that have the new nearest neighbors as a vertex)
+    for k in range(j, n0 + 1):
+        X_NN = X0[anti_ranks[:k],]
         for item in itertools.combinations(range(k - 1), p):
             candidate = item + (k - 1,)
             if is_in_hull(X1, X_NN[candidate,]):
                 try:
-                    radius, center = compute_radius_and_barycenter(
-                        X_NN[candidate,]
-                    )  # sometimes gives an error if points have the same values for a particular X0
+                    radius, center = compute_radius_and_barycenter(X_NN[candidate,])  # sometimes gives an error if points have the same values for a particular X0
                 except:
                     radius = np.nan
 
-                if np.isnan(radius):  # if there is a degenerate case, we stop
-                    the_simplex = candidate
-                    foundIt = True
-                    break
+                if np.isnan(radius) or not is_inside_sphere(np.delete(X0, anti_ranks[candidate,], 0), center, radius):  # if the circumscribed hypersphere does not contain any other point, we stop
+                    anti_ranks_tilde = sorted(anti_ranks[candidate,])
+                    return X0[anti_ranks_tilde,], anti_ranks_tilde
 
-                if not is_inside_sphere(
-                    np.delete(X0, antiRanks[candidate,], 0), center, radius
-                ):
-                    the_simplex = candidate
-                    foundIt = True
-                    break
-        if foundIt:
-            break
-
-    antiRanks_tilde = sorted(antiRanks[the_simplex,])
-    return X0[antiRanks_tilde,], antiRanks_tilde
+    # when points is not inside convex hull, returns all the points
+    anti_ranks_tilde = sorted(anti_ranks)
+    return X0[anti_ranks_tilde,], anti_ranks_tilde
 
 
 def pensynth_weights(X0, X1, pen: float = 0.0, V=None):
@@ -236,20 +216,20 @@ def pensynth_weights(X0, X1, pen: float = 0.0, V=None):
         V = np.identity(X0.shape[1])
     n0 = len(X0)
 
-    # OBJECTIVE
+    # Objective function
     delta = np.diag((X0 - X1) @ V @ (X0 - X1).T)
     P = matrix(X0 @ V @ X0.T)
     q = matrix(-X0 @ V @ X1 + pen * delta / 2)
 
-    # ADDING-UP TO ONE
+    # Adding up to one constraint
     A = matrix(1.0, (1, n0))
     b = matrix(1.0)
 
-    # NON-NEGATIVITY
+    # Non negativity constraints
     G = matrix(-np.identity(n0))
     h = matrix(np.zeros(n0))
 
-    # COMPUTE SOLUTION
+    # Compute solution
     sol = solvers.qp(P, q, G, h, A, b)
     return clip_to_zero(np.squeeze(np.array(sol["x"])))
 
